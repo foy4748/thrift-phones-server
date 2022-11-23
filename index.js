@@ -66,6 +66,7 @@ const client = new MongoClient(DB_URI, {
 async function run() {
   try {
     const usersCollection = client.db(DB_NAME).collection("users");
+    const categoryCollection = client.db(DB_NAME).collection("categories");
 
     // --------------- API END POINTS / Controllers ---------
 
@@ -84,6 +85,19 @@ async function run() {
       }
     });
 
+    app.get("/categories", async (req, res) => {
+      try {
+        const response = await categoryCollection.find({}).toArray();
+        res.setHeader("Content-Type", "application/json");
+        res.status(200).send(response);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "GET CATEGORIES FAILED" });
+      }
+    });
+
+    // Handling POST requests ------------------
     /* Post User */
     app.post("/users", async (req, res) => {
       const body = req.body;
