@@ -86,6 +86,21 @@ async function run() {
       }
     });
 
+    app.get("/users/:id", async (req, res) => {
+      const { id } = req.params;
+      try {
+        if (id) {
+          const response = await usersCollection.findOne({ uid: id });
+          res.setHeader("Content-Type", "application/json");
+          res.status(200).send(response);
+        }
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "GET CATEGORIES FAILED" });
+      }
+    });
+
     app.get("/categories", async (req, res) => {
       try {
         let query = {};
