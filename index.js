@@ -89,12 +89,16 @@ async function run() {
       const { role } = req.query;
       try {
         if (role) {
-          const response = await usersCollection.find({}).toArray();
+          const results = await usersCollection
+            .find({ role: { $in: [role] } })
+            .toArray();
+          /*
           const results = response.filter((itm) =>
             itm.role.includes(role) && !itm.role.includes("admin")
               ? true
               : false
           );
+			*/
           res.setHeader("Content-Type", "application/json");
           res.status(200).send(results);
         }
@@ -190,6 +194,23 @@ async function run() {
         console.error(error);
         res.setHeader("Content-Type", "application/json");
         res.status(501).send({ error: true, message: "PRODUCT POST FAILED!!" });
+      }
+    });
+    // Handling PATCH operations
+    /* Patch Verfied seller */
+    app.patch("/users", async (req, res) => {
+      const { user_id } = req.headers;
+      const { verified } = req.body;
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: ObjectId(user_id) },
+          { $set: { verified } }
+        );
+        res.status(200).send(result);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "PATCH SELLER FAILED!!" });
       }
     });
   } finally {
