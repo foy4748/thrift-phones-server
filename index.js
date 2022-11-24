@@ -88,7 +88,12 @@ async function run() {
 
     app.get("/categories", async (req, res) => {
       try {
-        const response = await categoryCollection.find({}).toArray();
+        let query = {};
+        const { categoryId } = req.query;
+        if (categoryId) {
+          query = { _id: ObjectId(categoryId) };
+        }
+        const response = await categoryCollection.find(query).toArray();
         res.setHeader("Content-Type", "application/json");
         res.status(200).send(response);
       } catch (error) {
@@ -100,9 +105,17 @@ async function run() {
 
     app.get("/products", async (req, res) => {
       try {
-        const { seller_uid } = req.query;
+        const { seller_uid, categoryId } = req.query;
+        let query;
+        if (seller_uid) {
+          query = { seller_uid };
+        }
+
+        if (categoryId) {
+          query = { categoryId };
+        }
         const products = await productsCollection
-          .find({ seller_uid })
+          .find(query)
           .sort({ postedTime: -1 })
           .toArray();
 
