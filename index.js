@@ -67,6 +67,7 @@ async function run() {
   try {
     const usersCollection = client.db(DB_NAME).collection("users");
     const categoryCollection = client.db(DB_NAME).collection("categories");
+    const productsCollection = client.db(DB_NAME).collection("products");
 
     // --------------- API END POINTS / Controllers ---------
 
@@ -97,6 +98,23 @@ async function run() {
       }
     });
 
+    app.get("/products", async (req, res) => {
+      try {
+        const { seller_uid } = req.query;
+        const products = await productsCollection
+          .find({ seller_uid })
+          .sort({ postedTime: -1 })
+          .toArray();
+
+        res.setHeader("Content-Type", "application/json");
+        res.status(200).send(products);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "GET PRODUCTS FAILED" });
+      }
+    });
+
     // Handling POST requests ------------------
     /* Post User */
     app.post("/users", async (req, res) => {
@@ -113,7 +131,18 @@ async function run() {
         res.status(501).send({ error: true, message: "USER POST FAILED!!" });
       }
     });
-    // Handling POST requests
+    /* Post Product */
+    app.post("/products", async (req, res) => {
+      try {
+        const response = await productsCollection.insertOne(req.body);
+        res.setHeader("Content-Type", "application/json");
+        res.status(200).send(response);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "PRODUCT POST FAILED!!" });
+      }
+    });
   } finally {
   }
 }
