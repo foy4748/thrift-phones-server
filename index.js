@@ -85,6 +85,27 @@ async function run() {
         res.status(501).send({ error: true, message: "TOKEN SIGNING FAILED" });
       }
     });
+    app.get("/users", async (req, res) => {
+      const { role } = req.query;
+      try {
+        if (role) {
+          const response = await usersCollection.find({}).toArray();
+          const results = response.filter((itm) =>
+            itm.role.includes(role) && !itm.role.includes("admin")
+              ? true
+              : false
+          );
+          res.setHeader("Content-Type", "application/json");
+          res.status(200).send(results);
+        }
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res
+          .status(501)
+          .send({ error: true, message: "GET ROLE BASED USERS FAILED" });
+      }
+    });
 
     app.get("/users/:id", async (req, res) => {
       const { id } = req.params;
