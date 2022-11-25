@@ -238,6 +238,22 @@ async function run() {
       }
     });
 
+    /* Post product to wishlists */
+    app.post("/wishlist", async (req, res) => {
+      const body = req.body;
+      body["product_id"] = ObjectId(body["product_id"]);
+      const { product_id, seller_id, buyer_uid } = body;
+      const query = { $and: [{ product_id }, { seller_id }, { buyer_uid }] };
+      const response = await wishlistCollection.updateOne(
+        query,
+        { $set: { ...body } },
+        {
+          upsert: true,
+        }
+      );
+      res.send(response);
+    });
+
     // Handling PATCH requests ------------------
     /* Patch  seller to verified */
     app.patch("/users", async (req, res) => {
