@@ -270,11 +270,15 @@ async function run() {
     // Handling PATCH requests ------------------
     /* Patch  seller to verified */
     app.patch("/users", async (req, res) => {
-      const { user_id } = req.headers;
+      const { user_id, user_uid } = req.headers;
       const { verified } = req.body;
       try {
         const result = await usersCollection.updateOne(
           { _id: ObjectId(user_id) },
+          { $set: { verified } }
+        );
+        await productsCollection.updateMany(
+          { seller_uid: user_uid },
           { $set: { verified } }
         );
         res.status(200).send(result);
