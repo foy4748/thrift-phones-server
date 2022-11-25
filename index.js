@@ -188,6 +188,19 @@ async function run() {
       }
     });
 
+    /* Get wishlisted products */
+    app.get("/wishlist", async (req, res) => {
+      const { buyer_uid } = req.query;
+      if (buyer_uid) {
+        const wishlist = await wishlistCollection.find({ buyer_uid }).toArray();
+        const productObjIds = wishlist.map((itm) => itm.product_id);
+        const products = await productsCollection
+          .find({ _id: { $in: productObjIds } })
+          .toArray();
+        res.send(products);
+      }
+    });
+
     // Handling POST requests ------------------
     /* Post User */
     app.post("/users", async (req, res) => {
