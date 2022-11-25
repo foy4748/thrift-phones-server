@@ -68,6 +68,7 @@ async function run() {
     const usersCollection = client.db(DB_NAME).collection("users");
     const categoryCollection = client.db(DB_NAME).collection("categories");
     const productsCollection = client.db(DB_NAME).collection("products");
+    const bookingsCollection = client.db(DB_NAME).collection("bookings");
 
     // --------------- API END POINTS / Controllers ---------
 
@@ -196,7 +197,29 @@ async function run() {
         res.status(501).send({ error: true, message: "PRODUCT POST FAILED!!" });
       }
     });
-    // Handling PATCH operations
+
+    /* Post Booking */
+    app.post("/bookings", async (req, res) => {
+      const body = req.body;
+      body["product_id"] = ObjectId(body["product_id"]);
+      const query = { _id: ObjectId(body["product_id"]) };
+
+      try {
+        await productsCollection.updateOne(query, {
+          $set: { booked: true },
+        });
+
+        const bookingResponse = await bookingsCollection.insertOne(body);
+
+        res.send(bookingResponse);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "BOOKING POST FAILED!!" });
+      }
+    });
+
+    // Handling PATCH requests ------------------
     /* Patch Verfied seller */
     app.patch("/users", async (req, res) => {
       const { user_id } = req.headers;
