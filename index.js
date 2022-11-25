@@ -169,6 +169,24 @@ async function run() {
       }
     });
 
+    app.get("/bookings", async (req, res) => {
+      try {
+        const { uid } = req.query;
+        if (!uid) {
+          res.status(200).send([]);
+        }
+        if (uid) {
+          const query = { buyer_uid: uid };
+          const bookings = await bookingsCollection.find(query).toArray();
+          res.status(200).send(bookings);
+        }
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "GET BOOKINGS FAILED!!" });
+      }
+    });
+
     // Handling POST requests ------------------
     /* Post User */
     app.post("/users", async (req, res) => {
