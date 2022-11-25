@@ -69,6 +69,7 @@ async function run() {
     const categoryCollection = client.db(DB_NAME).collection("categories");
     const productsCollection = client.db(DB_NAME).collection("products");
     const bookingsCollection = client.db(DB_NAME).collection("bookings");
+    const wishlistCollection = client.db(DB_NAME).collection("wishlists");
 
     // --------------- API END POINTS / Controllers ---------
 
@@ -238,7 +239,7 @@ async function run() {
     });
 
     // Handling PATCH requests ------------------
-    /* Patch Verfied seller */
+    /* Patch  seller to verified */
     app.patch("/users", async (req, res) => {
       const { user_id } = req.headers;
       const { verified } = req.body;
@@ -252,6 +253,48 @@ async function run() {
         console.error(error);
         res.setHeader("Content-Type", "application/json");
         res.status(501).send({ error: true, message: "PATCH SELLER FAILED!!" });
+      }
+    });
+
+    /* Patch product to advertise */
+    app.patch("/products", async (req, res) => {
+      const { product_id } = req.headers;
+      const { advertised } = req.body;
+      try {
+        const result = await productsCollection.updateOne(
+          { _id: ObjectId(product_id) },
+          { $set: { advertised } }
+        );
+        res.status(200).send(result);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res
+          .status(501)
+          .send({ error: true, message: "PATCH PRODUCT ADVERTISE FAILED!!" });
+      }
+    });
+
+    // Handling DELETE requests ------------------
+    app.delete("/delete-products", async (req, res) => {
+      try {
+        const { product_id } = req.headers;
+        const products = await productsCollection.findOne({
+          _id: ObjectId(product_id),
+        });
+        const bookings = await bookingsCollection.findOne({
+          product_id: ObjectId(product_id),
+        });
+        const wishlists = await wishlistCollection
+          .find({ product_id: ObjectId(product_id) })
+          .toArray();
+        res.status(200).send({ error: false, testing: true });
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res
+          .status(501)
+          .send({ error: true, message: "DELETE PRODUCT FAILED!!" });
       }
     });
   } finally {
