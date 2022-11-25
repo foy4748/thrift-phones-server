@@ -326,6 +326,23 @@ async function run() {
           .send({ error: true, message: "DELETE PRODUCT FAILED!!" });
       }
     });
+
+    app.delete("/wishlist", async (req, res) => {
+      const { product_id, buyer_uid } = req.headers;
+      try {
+        const result = await wishlistCollection.deleteOne({
+          product_id: ObjectId(product_id),
+          buyer_uid,
+        });
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res
+          .status(501)
+          .send({ error: true, message: "DELETE WISHED ITEM FAILED!!" });
+      }
+    });
   } finally {
   }
 }
