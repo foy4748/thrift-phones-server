@@ -147,7 +147,7 @@ async function run() {
 
     app.get("/products", async (req, res) => {
       try {
-        const { seller_uid, categoryId } = req.query;
+        const { seller_uid, categoryId, advertised } = req.query;
         let query;
         if (seller_uid) {
           query = { seller_uid };
@@ -155,6 +155,10 @@ async function run() {
 
         if (categoryId) {
           query = { categoryId };
+        }
+
+        if (advertised) {
+          query = { advertised: true };
         }
         const products = await productsCollection
           .find(query)
@@ -235,13 +239,21 @@ async function run() {
       const body = req.body;
       body["product_id"] = ObjectId(body["product_id"]);
       const query = { _id: ObjectId(body["product_id"]) };
+      const checkExistsQuery = {
+        product_id: ObjectId(body["product_id"]),
+        buyer_uid: body["buyer_uid"],
+      };
 
       try {
         await productsCollection.updateOne(query, {
           $set: { booked: true },
         });
 
-        const bookingResponse = await bookingsCollection.insertOne(body);
+        const bookingResponse = await bookingsCollection.updateOne(
+          checkExistsQuery,
+          { $set: { ...body } },
+          { upsert: true }
+        );
 
         res.send(bookingResponse);
       } catch (error) {
