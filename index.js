@@ -165,22 +165,27 @@ async function run() {
       }
     });
 
-    app.get("/my-products", authGuard, async (req, res) => {
-      try {
-        const query = { seller_uid: res.decoded.uid };
-        const products = await productsCollection
-          .find(query)
-          .sort({ postedTime: -1 })
-          .toArray();
+    app.get(
+      "/my-products",
+      authGuard,
+      roleCheck("seller"),
+      async (req, res) => {
+        try {
+          const query = { seller_uid: res.decoded.uid };
+          const products = await productsCollection
+            .find(query)
+            .sort({ postedTime: -1 })
+            .toArray();
 
-        res.setHeader("Content-Type", "application/json");
-        res.status(200).send(products);
-      } catch (error) {
-        console.error(error);
-        res.setHeader("Content-Type", "application/json");
-        res.status(501).send({ error: true, message: "GET PRODUCTS FAILED" });
+          res.setHeader("Content-Type", "application/json");
+          res.status(200).send(products);
+        } catch (error) {
+          console.error(error);
+          res.setHeader("Content-Type", "application/json");
+          res.status(501).send({ error: true, message: "GET PRODUCTS FAILED" });
+        }
       }
-    });
+    );
 
     app.get("/products", async (req, res) => {
       try {
@@ -211,7 +216,7 @@ async function run() {
       }
     });
 
-    app.get("/bookings", authGuard, async (req, res) => {
+    app.get("/bookings", authGuard, roleCheck("buyer"), async (req, res) => {
       try {
         const { uid } = res.decoded;
         if (!uid) {
@@ -230,7 +235,7 @@ async function run() {
     });
 
     /* Get wishlisted products */
-    app.get("/wishlist", authGuard, async (req, res) => {
+    app.get("/wishlist", authGuard, roleCheck("buyer"), async (req, res) => {
       const { uid: buyer_uid } = res.decoded;
       if (buyer_uid) {
         const wishlist = await wishlistCollection.find({ buyer_uid }).toArray();
@@ -394,36 +399,41 @@ async function run() {
     });
 
     // Handling DELETE requests ------------------
-    app.delete("/delete-products", authGuard, async (req, res) => {
-      try {
-        const { product_id } = req.headers;
-        const { uid: seller_uid } = res.decoded;
-        console.log(product_id, seller_uid);
-        const products = await productsCollection.findOne({
-          _id: ObjectId(product_id),
-          seller_uid,
-        });
-        const bookings = await bookingsCollection
-          .find({
-            product_id: ObjectId(product_id),
+    app.delete(
+      "/delete-products",
+      authGuard,
+      roleCheck("seller"),
+      async (req, res) => {
+        try {
+          const { product_id } = req.headers;
+          const { uid: seller_uid } = res.decoded;
+          console.log(product_id, seller_uid);
+          const products = await productsCollection.findOne({
+            _id: ObjectId(product_id),
             seller_uid,
-          })
-          .toArray();
+          });
+          const bookings = await bookingsCollection
+            .find({
+              product_id: ObjectId(product_id),
+              seller_uid,
+            })
+            .toArray();
 
-        const wishlists = await wishlistCollection
-          .find({ product_id: ObjectId(product_id), seller_uid })
-          .toArray();
-        console.log("wishlists");
-        console.log(wishlists);
-        res.status(200).send({ error: false, testing: true });
-      } catch (error) {
-        console.error(error);
-        res.setHeader("Content-Type", "application/json");
-        res
-          .status(501)
-          .send({ error: true, message: "DELETE PRODUCT FAILED!!" });
+          const wishlists = await wishlistCollection
+            .find({ product_id: ObjectId(product_id), seller_uid })
+            .toArray();
+          console.log("wishlists");
+          console.log(wishlists);
+          res.status(200).send({ error: false, testing: true });
+        } catch (error) {
+          console.error(error);
+          res.setHeader("Content-Type", "application/json");
+          res
+            .status(501)
+            .send({ error: true, message: "DELETE PRODUCT FAILED!!" });
+        }
       }
-    });
+    );
 
     app.delete("/wishlist", authGuard, roleCheck("buyer"), async (req, res) => {
       const { product_id } = req.headers;
