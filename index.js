@@ -127,7 +127,7 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.setHeader("Content-Type", "application/json");
-        res.status(501).send({ error: true, message: "GET CATEGORIES FAILED" });
+        res.status(501).send({ error: true, message: "GET USER FAILED" });
       }
     });
 
@@ -148,13 +148,26 @@ async function run() {
       }
     });
 
+    app.get("/my-products", authGuard, async (req, res) => {
+      try {
+        const query = { seller_uid: res.decoded.uid };
+        const products = await productsCollection
+          .find(query)
+          .sort({ postedTime: -1 })
+          .toArray();
+
+        res.setHeader("Content-Type", "application/json");
+        res.status(200).send(products);
+      } catch (error) {
+        console.error(error);
+        res.setHeader("Content-Type", "application/json");
+        res.status(501).send({ error: true, message: "GET PRODUCTS FAILED" });
+      }
+    });
+
     app.get("/products", async (req, res) => {
       try {
-        const { seller_uid, categoryId, advertised, product_id } = req.query;
-        let query;
-        if (seller_uid) {
-          query = { seller_uid };
-        }
+        const { categoryId, advertised, product_id } = req.query;
 
         if (categoryId) {
           query = { categoryId };
@@ -181,9 +194,9 @@ async function run() {
       }
     });
 
-    app.get("/bookings", async (req, res) => {
+    app.get("/bookings", authGuard, async (req, res) => {
       try {
-        const { uid } = req.query;
+        const { uid } = res.decoded;
         if (!uid) {
           res.status(200).send([]);
         }
@@ -274,8 +287,8 @@ async function run() {
     app.post("/wishlist", async (req, res) => {
       const body = req.body;
       body["product_id"] = ObjectId(body["product_id"]);
-      const { product_id, seller_id, buyer_uid } = body;
-      const query = { $and: [{ product_id }, { seller_id }, { buyer_uid }] };
+      const { product_id, seller_uid, buyer_uid } = body;
+      const query = { $and: [{ product_id }, { seller_uid }, { buyer_uid }] };
       const response = await wishlistCollection.updateOne(
         query,
         { $set: { ...body } },
@@ -362,18 +375,27 @@ async function run() {
     });
 
     // Handling DELETE requests ------------------
-    app.delete("/delete-products", async (req, res) => {
+    app.delete("/delete-products", authGuard, async (req, res) => {
       try {
         const { product_id } = req.headers;
+        const { uid: seller_uid } = res.decoded;
+        console.log(product_id, seller_uid);
         const products = await productsCollection.findOne({
           _id: ObjectId(product_id),
+          seller_uid,
         });
-        const bookings = await bookingsCollection.findOne({
-          product_id: ObjectId(product_id),
-        });
-        const wishlists = await wishlistCollection
-          .find({ product_id: ObjectId(product_id) })
+        const bookings = await bookingsCollection
+          .find({
+            product_id: ObjectId(product_id),
+            seller_uid,
+          })
           .toArray();
+
+        const wishlists = await wishlistCollection
+          .find({ product_id: ObjectId(product_id), seller_uid })
+          .toArray();
+        console.log("wishlists");
+        console.log(wishlists);
         res.status(200).send({ error: false, testing: true });
       } catch (error) {
         console.error(error);
@@ -384,8 +406,9 @@ async function run() {
       }
     });
 
-    app.delete("/wishlist", async (req, res) => {
-      const { product_id, buyer_uid } = req.headers;
+    app.delete("/wishlist", authGuard, async (req, res) => {
+      const { product_id } = req.headers;
+      const buyer_uid = res.decoded.uid;
       try {
         const result = await wishlistCollection.deleteOne({
           product_id: ObjectId(product_id),
