@@ -25,8 +25,10 @@ app.use(cors());
 
 //------------------- Accessing Secrets --------------------
 const PORT = process.env.PORT || process.env.DEV_PORT;
-const { DB_URI, DB_NAME, SECRET_JWT } = process.env;
+const { DB_URI, DB_NAME, SECRET_JWT, STRIPE_KEY } = process.env;
 //-----------------------------------------
+
+const stripe = require("stripe")(STRIPE_KEY);
 
 //---------------- Middleware Functions -------------------
 
@@ -70,6 +72,7 @@ async function run() {
     const productsCollection = client.db(DB_NAME).collection("products");
     const bookingsCollection = client.db(DB_NAME).collection("bookings");
     const wishlistCollection = client.db(DB_NAME).collection("wishlists");
+    const paymentCollection = client.db(DB_NAME).collection("payments");
 
     // --------------- API END POINTS / Controllers ---------
 
@@ -147,7 +150,7 @@ async function run() {
 
     app.get("/products", async (req, res) => {
       try {
-        const { seller_uid, categoryId, advertised } = req.query;
+        const { seller_uid, categoryId, advertised, product_id } = req.query;
         let query;
         if (seller_uid) {
           query = { seller_uid };
@@ -159,6 +162,10 @@ async function run() {
 
         if (advertised) {
           query = { advertised: true };
+        }
+
+        if (product_id) {
+          query = { _id: ObjectId(product_id) };
         }
         const products = await productsCollection
           .find(query)
@@ -277,6 +284,40 @@ async function run() {
         }
       );
       res.send(response);
+    });
+
+    /* Post Payment Intend */
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const calculateOrderAmount = (price) => {
+        return price * 100;
+      };
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: calculateOrderAmount(price),
+        currency: "usd",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    /* Post Payment Transaction info */
+    app.post("/payment", async (req, res) => {
+      const query1 = { _id: ObjectId(req.body["product_id"]) };
+      const updateResponse = await productsCollection.updateOne(query1, {
+        $set: { paid: true },
+      });
+      const query2 = { product_id: ObjectId(req.body["product_id"]) };
+      await bookingsCollection.updateMany(query2, { $set: { paid: true } });
+      await wishlistCollection.updateMany(query2, { $set: { paid: true } });
+      const insertResponse = await paymentCollection.insertOne(req.body);
+      res.send({ updateResponse, insertResponse });
     });
 
     // Handling PATCH requests ------------------
