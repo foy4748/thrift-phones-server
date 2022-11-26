@@ -213,8 +213,8 @@ async function run() {
     });
 
     /* Get wishlisted products */
-    app.get("/wishlist", async (req, res) => {
-      const { buyer_uid } = req.query;
+    app.get("/wishlist", authGuard, async (req, res) => {
+      const { uid: buyer_uid } = res.decoded;
       if (buyer_uid) {
         const wishlist = await wishlistCollection.find({ buyer_uid }).toArray();
         const productObjIds = wishlist.map((itm) => itm.product_id);
@@ -284,10 +284,11 @@ async function run() {
     });
 
     /* Post product to wishlists */
-    app.post("/wishlist", async (req, res) => {
+    app.post("/wishlist", authGuard, async (req, res) => {
       const body = req.body;
       body["product_id"] = ObjectId(body["product_id"]);
-      const { product_id, seller_uid, buyer_uid } = body;
+      const { product_id, seller_uid } = body;
+      const { uid: buyer_uid } = res.decoded;
       const query = { $and: [{ product_id }, { seller_uid }, { buyer_uid }] };
       const response = await wishlistCollection.updateOne(
         query,
@@ -335,7 +336,8 @@ async function run() {
 
     // Handling PATCH requests ------------------
     /* Patch  seller to verified */
-    app.patch("/users", async (req, res) => {
+    // Requires ROLE auth-z
+    app.patch("/users", authGuard, async (req, res) => {
       const { user_id, user_uid } = req.headers;
       const { verified } = req.body;
       try {
@@ -355,8 +357,9 @@ async function run() {
       }
     });
 
+    // Requires ROLE auth-z
     /* Patch product to advertise */
-    app.patch("/products", async (req, res) => {
+    app.patch("/products", authGuard, async (req, res) => {
       const { product_id } = req.headers;
       const { advertised } = req.body;
       try {
