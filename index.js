@@ -55,6 +55,21 @@ const authGuard = async (req, res, next) => {
       .end();
   }
 };
+
+// Role Checking Middleware
+const roleCheck = (role) => {
+  return async (req, res, next) => {
+    if (res.decoded.role.includes(role)) {
+      next();
+    } else {
+      console.error(error.message);
+      res
+        .status(403)
+        .send({ error: true, message: "Auth-z failed. Wrong Role" })
+        .end();
+    }
+  };
+};
 //-----------------------------------------
 
 //---------------- CONNECT MONGODB -------------------
@@ -81,7 +96,9 @@ async function run() {
     app.get("/auth", async (req, res) => {
       try {
         const { uid } = req.headers;
-        const authtoken = jwt.sign({ uid }, SECRET_JWT);
+        const user = await usersCollection.findOne({ uid });
+        const role = user.role;
+        const authtoken = jwt.sign({ uid, role }, SECRET_JWT);
         res.setHeader("Content-Type", "application/json");
         res.status(200).send({ error: false, authtoken });
       } catch (error) {
@@ -242,7 +259,7 @@ async function run() {
       }
     });
     /* Post Product */
-    app.post("/products", async (req, res) => {
+    app.post("/products", authGuard, roleCheck("seller"), async (req, res) => {
       try {
         const response = await productsCollection.insertOne(req.body);
         res.setHeader("Content-Type", "application/json");
@@ -255,13 +272,13 @@ async function run() {
     });
 
     /* Post Booking */
-    app.post("/bookings", async (req, res) => {
+    app.post("/bookings", authGuard, roleCheck("buyer"), async (req, res) => {
       const body = req.body;
       body["product_id"] = ObjectId(body["product_id"]);
       const query = { _id: ObjectId(body["product_id"]) };
       const checkExistsQuery = {
         product_id: ObjectId(body["product_id"]),
-        buyer_uid: body["buyer_uid"],
+        buyer_uid: res.decoded.uid,
       };
 
       try {
@@ -284,7 +301,7 @@ async function run() {
     });
 
     /* Post product to wishlists */
-    app.post("/wishlist", authGuard, async (req, res) => {
+    app.post("/wishlist", authGuard, roleCheck("buyer"), async (req, res) => {
       const body = req.body;
       body["product_id"] = ObjectId(body["product_id"]);
       const { product_id, seller_uid } = body;
@@ -335,9 +352,9 @@ async function run() {
     });
 
     // Handling PATCH requests ------------------
+
     /* Patch  seller to verified */
-    // Requires ROLE auth-z
-    app.patch("/users", authGuard, async (req, res) => {
+    app.patch("/users", authGuard, roleCheck("admin"), async (req, res) => {
       const { user_id, user_uid } = req.headers;
       const { verified } = req.body;
       try {
@@ -357,9 +374,8 @@ async function run() {
       }
     });
 
-    // Requires ROLE auth-z
     /* Patch product to advertise */
-    app.patch("/products", authGuard, async (req, res) => {
+    app.patch("/products", authGuard, roleCheck("seller"), async (req, res) => {
       const { product_id } = req.headers;
       const { advertised } = req.body;
       try {
@@ -409,7 +425,7 @@ async function run() {
       }
     });
 
-    app.delete("/wishlist", authGuard, async (req, res) => {
+    app.delete("/wishlist", authGuard, roleCheck("buyer"), async (req, res) => {
       const { product_id } = req.headers;
       const buyer_uid = res.decoded.uid;
       try {
