@@ -62,7 +62,6 @@ const roleCheck = (role) => {
     if (res.decoded.role.includes(role)) {
       next();
     } else {
-      console.error(error.message);
       res
         .status(403)
         .send({ error: true, message: "Auth-z failed. Wrong Role" })
@@ -138,8 +137,15 @@ async function run() {
       try {
         if (id) {
           const response = await usersCollection.findOne({ uid: id });
-          res.setHeader("Content-Type", "application/json");
-          res.status(200).send(response);
+          if (response) {
+            res.setHeader("Content-Type", "application/json");
+            return res.status(200).send(response);
+          } else {
+            res.setHeader("Content-Type", "application/json");
+            return res
+              .status(404)
+              .send({ error: true, message: "USER NOT FOUND" });
+          }
         }
       } catch (error) {
         console.error(error);
@@ -399,6 +405,56 @@ async function run() {
     });
 
     // Handling DELETE requests ------------------
+
+    /* Delete a buyer */
+    app.delete(
+      "/delete-buyer",
+      authGuard,
+      roleCheck("admin"),
+      async (req, res) => {
+        const { buyer_uid } = req.headers;
+        const user = await usersCollection.findOne({ uid: buyer_uid });
+        const bookings = await bookingsCollection.find({ buyer_uid }).toArray();
+        const wishlists = await wishlistCollection
+          .find({ buyer_uid })
+          .toArray();
+        console.log("user", user, "bookings", bookings, "wishes", wishlists);
+        res.send({ error: false, testing: true });
+      }
+    );
+
+    /* Delete a seller */
+    app.delete(
+      "/delete-seller",
+      authGuard,
+      roleCheck("admin"),
+      async (req, res) => {
+        const { seller_uid } = req.headers;
+        const user = await usersCollection.findOne({ uid: seller_uid });
+        const products = await productsCollection
+          .find({ seller_uid })
+          .toArray();
+        const bookings = await bookingsCollection
+          .find({ seller_uid })
+          .toArray();
+        const wishlists = await wishlistCollection
+          .find({ seller_uid })
+          .toArray();
+        console.log(
+          "user",
+          user,
+          "bookings",
+          bookings,
+          "wishes",
+          wishlists,
+          "products",
+          products
+        );
+        res.send({ error: false, testing: true });
+      }
+    );
+
+    /* Delete Product */
     app.delete(
       "/delete-products",
       authGuard,
@@ -435,6 +491,7 @@ async function run() {
       }
     );
 
+    /* Delete a wished item */
     app.delete("/wishlist", authGuard, roleCheck("buyer"), async (req, res) => {
       const { product_id } = req.headers;
       const buyer_uid = res.decoded.uid;
