@@ -412,14 +412,21 @@ async function run() {
       authGuard,
       roleCheck("admin"),
       async (req, res) => {
-        const { buyer_uid } = req.headers;
-        const user = await usersCollection.findOne({ uid: buyer_uid });
-        const bookings = await bookingsCollection.find({ buyer_uid }).toArray();
-        const wishlists = await wishlistCollection
-          .find({ buyer_uid })
-          .toArray();
-        console.log("user", user, "bookings", bookings, "wishes", wishlists);
-        res.send({ error: false, testing: true });
+        try {
+          const { buyer_uid } = req.headers;
+          const user = await usersCollection.findOne({ uid: buyer_uid });
+          const bookings = await bookingsCollection.deleteMany({ buyer_uid });
+          const wishlists = await wishlistCollection.deleteMany({ buyer_uid });
+          console.log("user", user, "bookings", bookings, "wishes", wishlists);
+          res.setHeader("Content-Type", "application/json");
+          res.send({ error: false, deleted: true });
+        } catch (error) {
+          console.error(error);
+          res.setHeader("Content-Type", "application/json");
+          res
+            .status(501)
+            .send({ error: true, message: "DELETE BUYER FAILED!!" });
+        }
       }
     );
 
@@ -434,12 +441,8 @@ async function run() {
         const products = await productsCollection
           .find({ seller_uid })
           .toArray();
-        const bookings = await bookingsCollection
-          .find({ seller_uid })
-          .toArray();
-        const wishlists = await wishlistCollection
-          .find({ seller_uid })
-          .toArray();
+        const bookings = await bookingsCollection.deleteMany({ seller_uid });
+        const wishlists = await wishlistCollection.deleteMany({ seller_uid });
         console.log(
           "user",
           user,
@@ -464,20 +467,19 @@ async function run() {
           const { product_id } = req.headers;
           const { uid: seller_uid } = res.decoded;
           console.log(product_id, seller_uid);
-          const products = await productsCollection.findOne({
+          const products = await productsCollection.deleteOne({
             _id: ObjectId(product_id),
             seller_uid,
           });
-          const bookings = await bookingsCollection
-            .find({
-              product_id: ObjectId(product_id),
-              seller_uid,
-            })
-            .toArray();
+          const bookings = await bookingsCollection.deleteMany({
+            product_id: ObjectId(product_id),
+            seller_uid,
+          });
 
-          const wishlists = await wishlistCollection
-            .find({ product_id: ObjectId(product_id), seller_uid })
-            .toArray();
+          const wishlists = await wishlistCollection.deleteMany({
+            product_id: ObjectId(product_id),
+            seller_uid,
+          });
           console.log("wishlists");
           console.log(wishlists);
           res.status(200).send({ error: false, testing: true });
