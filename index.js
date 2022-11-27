@@ -199,12 +199,20 @@ async function run() {
         const { categoryId, advertised, product_id } = req.query;
 
         if (categoryId) {
-          query = { $and: [{ categoryId }, { paid: { $exists: false } }] };
+          query = {
+            $and: [
+              { categoryId },
+              { $or: [{ paid: { $exists: false } }, { paid: false }] },
+            ],
+          };
         }
 
         if (advertised) {
           query = {
-            $and: [{ advertised: true }, { paid: { $exists: false } }],
+            $and: [
+              { advertised: true },
+              { $or: [{ paid: { $exists: false } }, { paid: false }] },
+            ],
           };
         }
 
