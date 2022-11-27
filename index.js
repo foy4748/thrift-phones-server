@@ -96,11 +96,17 @@ async function run() {
     app.get("/auth", async (req, res) => {
       try {
         const { uid } = req.headers;
-        const user = await usersCollection.findOne({ uid });
-        const role = user.role;
-        const authtoken = jwt.sign({ uid, role }, SECRET_JWT);
-        res.setHeader("Content-Type", "application/json");
-        res.status(200).send({ error: false, authtoken });
+        if (uid) {
+          const user = await usersCollection.findOne({ uid });
+          const role = user.role;
+          const authtoken = jwt.sign({ uid, role }, SECRET_JWT);
+          res.setHeader("Content-Type", "application/json");
+          res.status(200).send({ error: false, authtoken });
+        } else {
+          return res
+            .status(404)
+            .send({ error: true, message: "USER DOES NOT EXISTS" });
+        }
       } catch (error) {
         console.error(error);
         res.setHeader("Content-Type", "application/json");
@@ -425,12 +431,12 @@ async function run() {
       async (req, res) => {
         try {
           const { buyer_uid } = req.headers;
-          const user = await usersCollection.findOne({ uid: buyer_uid });
+          const user = await usersCollection.deleteOne({ uid: buyer_uid });
           const bookings = await bookingsCollection.deleteMany({ buyer_uid });
           const wishlists = await wishlistCollection.deleteMany({ buyer_uid });
           console.log("user", user, "bookings", bookings, "wishes", wishlists);
           res.setHeader("Content-Type", "application/json");
-          res.send({ error: false, deleted: true });
+          res.send(user);
         } catch (error) {
           console.error(error);
           res.setHeader("Content-Type", "application/json");
@@ -448,7 +454,7 @@ async function run() {
       roleCheck("admin"),
       async (req, res) => {
         const { seller_uid } = req.headers;
-        const user = await usersCollection.findOne({ uid: seller_uid });
+        const user = await usersCollection.deleteOne({ uid: seller_uid });
         const products = await productsCollection
           .find({ seller_uid })
           .toArray();
@@ -464,7 +470,7 @@ async function run() {
           "products",
           products
         );
-        res.send({ error: false, testing: true });
+        res.send(user);
       }
     );
 
