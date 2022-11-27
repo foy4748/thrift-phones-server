@@ -466,7 +466,6 @@ async function run() {
         try {
           const { product_id } = req.headers;
           const { uid: seller_uid } = res.decoded;
-          console.log(product_id, seller_uid);
           const products = await productsCollection.deleteOne({
             _id: ObjectId(product_id),
             seller_uid,
@@ -480,9 +479,7 @@ async function run() {
             product_id: ObjectId(product_id),
             seller_uid,
           });
-          console.log("wishlists");
-          console.log(wishlists);
-          res.status(200).send({ error: false, testing: true });
+          res.status(200).send(products);
         } catch (error) {
           console.error(error);
           res.setHeader("Content-Type", "application/json");
