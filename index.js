@@ -81,6 +81,7 @@ const client = new MongoClient(DB_URI, {
 // //
 async function run() {
   try {
+    // ------------------------ COLLECTIONS ------------------- //
     const usersCollection = client.db(DB_NAME).collection("users");
     const categoryCollection = client.db(DB_NAME).collection("categories");
     const productsCollection = client.db(DB_NAME).collection("products");
@@ -198,11 +199,13 @@ async function run() {
         const { categoryId, advertised, product_id } = req.query;
 
         if (categoryId) {
-          query = { categoryId };
+          query = { $and: [{ categoryId }, { paid: { $exists: false } }] };
         }
 
         if (advertised) {
-          query = { advertised: true };
+          query = {
+            $and: [{ advertised: true }, { paid: { $exists: false } }],
+          };
         }
 
         if (product_id) {
