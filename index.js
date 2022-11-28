@@ -456,7 +456,7 @@ async function run() {
         const { seller_uid } = req.headers;
         const user = await usersCollection.deleteOne({ uid: seller_uid });
         const products = await productsCollection
-          .find({ seller_uid })
+          .deleteMany({ seller_uid })
           .toArray();
         const bookings = await bookingsCollection.deleteMany({ seller_uid });
         const wishlists = await wishlistCollection.deleteMany({ seller_uid });
