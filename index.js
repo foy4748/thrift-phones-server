@@ -13,7 +13,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = mongodb;
 
 // Middleware options
 const corsOptions = {
-  origin: [process.env.CLIENT_ADDRESS],
+  origin: [process.env.CLIENT_ADDRESS, process.env.DEV_CLIENT],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   withCredentials: true,
 };

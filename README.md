@@ -3,8 +3,8 @@
 
 ## Links
 - Live Website: [Netlify](https://p-hero-foy4748-assignment-12.netlify.app/)
-- CLIENT Repo: [Github](https://github.com/programming-hero-web-course-4/b612-used-products-resale-clients-side-foy4748)
-- SERVER Repo: [Github](https://github.com/programming-hero-web-course-4/b612-used-products-resale-server-side-foy4748)
+- CLIENT Repo: [Github](https://github.com/foy4748/thrift-phones)
+- SERVER Repo: [Github](https://github.com/foy4748/thrift-phones-server)
 - Requirements: [Github](https://github.com/ProgrammingHero1/Used-products-resale-market-Assignment/blob/main/task_description.md)
 
 # Features
