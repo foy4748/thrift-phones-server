@@ -3,6 +3,7 @@ const express = require("express");
 const mongodb = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const morgan = require("morgan");
 //-----------------------------------------
 
 // -------------------- Initializations --------------------
@@ -21,6 +22,7 @@ const corsOptions = {
 // Middlewares
 app.use(express.json());
 app.use(cors(corsOptions));
+app.use(morgan("tiny"));
 //-----------------------------------------
 
 //------------------- Accessing Secrets --------------------
@@ -455,9 +457,7 @@ async function run() {
       async (req, res) => {
         const { seller_uid } = req.headers;
         const user = await usersCollection.deleteOne({ uid: seller_uid });
-        const products = await productsCollection
-          .deleteMany({ seller_uid })
-          .toArray();
+        const products = await productsCollection.deleteMany({ seller_uid });
         const bookings = await bookingsCollection.deleteMany({ seller_uid });
         const wishlists = await wishlistCollection.deleteMany({ seller_uid });
         console.log(
