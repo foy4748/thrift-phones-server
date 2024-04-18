@@ -93,6 +93,13 @@ async function run() {
 
     // --------------- API END POINTS / Controllers ---------
 
+    app.get("/", async (req, res) => {
+      res.send({
+        error: false,
+        message: "THRIFT PHONES SERVER IS UP AND RUNNING",
+      });
+    });
+
     // Handling GET requests ------------------
     // Token Signing API END point
     app.get("/auth", async (req, res) => {
